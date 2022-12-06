@@ -20,12 +20,12 @@ class ThePhoto {
 			?? $this.GetTag("File Modified Date", "File", $metadata)
 		$dateString | Write-Verbose
 
-		foreach ($f in @( { [datetime]$args }, { [System.DateTime]::ParseExact($args, 'yyyy:MM:dd HH:mm:ss', $null) })) {
+		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
 			try {
 				$this.Date = $f.Invoke($dateString)[0]
 				break
 			}
-			catch [System.Exception] { $_ | Write-Debug }
+			catch [System.Exception] { $_ | Write-Warning }
 		}
 	}
 
@@ -56,6 +56,7 @@ class ThePhoto {
 function Write-ThePhotos {
 	[CmdletBinding()]
 	param(
+		[Parameter(Mandatory)]
 		$Path,
 		$Culture = "de_de",
 		$WinSize = 5
@@ -71,10 +72,10 @@ function Write-ThePhotos {
 			continue
 		}
 		if ($neededSpace % 4 -eq 0) {
-			"\\clearpage" 
+			"\clearpage" 
 		}
 		if (-not ($pmd.Standing)) {
-			"\\photoNouveauN{$($pmd.Path)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{}{}{}" 
+			"\photoNouveauN{$($pmd.Path | Resolve-RelativePath)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{}{}{}" 
 			$neededSpace += 1
 			$photos[$i] = $null
 		}
@@ -89,14 +90,14 @@ function Write-ThePhotos {
 				if ( (-not $other) -or (-not $other.Standing)) {
 					continue
 				}
-				"\\photoNouveauN{$($pmd.Path)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{$($other.Path)}{$($other.GetOptimalWidth())mm}{$($other.GetHumanDate());$($other.Comment)}" 
+				"\photoNouveauN{$($pmd.Path | Resolve-RelativePath)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{$($other.Path | Resolve-RelativePath)}{$($other.GetOptimalWidth())mm}{$($other.GetHumanDate());$($other.Comment)}" 
 				$neededSpace += 1
 				$pairFound = $true
 				$photos[$j] = $null
 				break
 			}
 			if (-not $pairFound) {
-				"\\photoNouveauN{$($pmd.Path)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{}{}{}" 
+				"\photoNouveauN{$($pmd.Path | Resolve-RelativePath)}{$($pmd.GetOptimalWidth())mm}{$($pmd.GetHumanDate());$($pmd.Comment)}{}{}{}" 
 				$neededSpace += 1
 				$photos[$i] = $null
 			}
@@ -109,7 +110,7 @@ function Import-MetadataExtractor {
 	param(
 		$PublishDir = "$PSScriptRoot/metadata-extractor-dotnet/MetadataExtractor.PowerShell/bin/Debug/net40/publish"
 	)
-	# get-childItem $PublishDir | ? { $_ -match "dll$" } | % { Add-Type -Path $_.FullName }
+	get-childItem $PublishDir | ? { $_ -match "dll$" } | % { Add-Type -Path $_.FullName }
 	Import-Module -Force "$PublishDir/MetadataExtractor.PowerShell.dll" -Global 
 }
 
