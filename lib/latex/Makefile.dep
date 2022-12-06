@@ -1,0 +1,95 @@
+# Makefile for LaTeX files
+
+# Original Makefile from http://www.math.psu.edu/elkin/math/497a/Makefile
+
+# Copyright (c) 2005 Matti Airas <Matti.Airas@hut.fi>
+
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions: 
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software. 
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+
+# $Id: Makefile,v 1.2 2007/02/28 10:42:32 kirschner Exp $
+
+LATEX	= pdflatex -halt-on-error
+BIBTEX	= bibtex
+MAKEINDEX = makeindex
+
+RERUN = "(There were undefined references|Rerun to get (cross-references|the bars) right)"
+RERUNBIB = "No file.*\.bbl|Citation.*undefined"
+MAKEIDX = "^[^%]*\\makeindex"
+MPRINT = "^[^%]*print"
+USETHUMBS = "^[^%]*thumbpdf"
+
+SRC	:= $(shell egrep -l '^[^%]*\\begin\{document\}' *.tex)
+
+TRG	= $(SRC:%.tex=%.dvi)
+PDF	= $(SRC:%.tex=%.pdf)
+COPYPDF	= $(SRC:%.tex=%.copy.pdf)
+
+COPY = if test -r $(<:%.tex=%.toc); then cp $(<:%.tex=%.toc) $(<:%.tex=%.toc.bak); fi 
+RM = rm -f
+OUTDATED = echo "EPS-file is out-of-date!" && false
+
+
+all 	: $(COPYPDF)
+
+define run-latex
+	  $(COPY);$(LATEX) $<
+	  # egrep -q $(MAKEIDX) $< && ($(MAKEINDEX) $(<:%.tex=%);$(COPY);$(LATEX) $<) ; true
+	  # egrep -c $(RERUNBIB) $(<:%.tex=%.log) && ($(BIBTEX) $(<:%.tex=%);$(COPY);$(LATEX) $<) ; true
+	  egrep -q $(RERUN) $(<:%.tex=%.log) && ($(COPY);$(LATEX) $<) ; true
+	  egrep -q $(RERUN) $(<:%.tex=%.log) && ($(COPY);$(LATEX) $<) ; true
+	  if cmp -s $(<:%.tex=%.toc) $(<:%.tex=%.toc.bak); then true ;else $(LATEX) $< ; fi
+	  $(RM) $(<:%.tex=%.toc.bak)
+	  # Display relevant warnings
+	  egrep -i "(Reference|Citation).*undefined" $(<:%.tex=%.log) ; true
+endef
+
+$(PDF)	: %.dvi : %.tex $(DEP) $(EPSPICS) $(BIBFILE)
+	  @$(run-latex)
+
+$(COPYPDF) : $(PDF)
+	cp -a $(PDF) $(COPYPDF)
+
+
+# TODO: This probably needs fixing
+html	: @$(DEP) $(EPSPICS)
+	  @$(L2H) $(SRC)
+
+clean	:
+	  -rm -f $(TRG) $(PSF) $(PDF) $(TRG:%.dvi=%.aux) $(TRG:%.dvi=%.bbl) $(TRG:%.dvi=%.blg) $(TRG:%.dvi=%.log) $(TRG:%.dvi=%.out) $(TRG:%.dvi=%.idx) $(TRG:%.dvi=%.ilg) $(TRG:%.dvi=%.ind) $(TRG:%.dvi=%.toc) $(DEP:%.tex=%.aux)
+
+.PHONY	: all show clean ps pdf showps
+
+
+######################################################################
+# Define rules for EPS source files.
+%.eps: %.sxd
+	$(OUTDATED)
+%.eps: %.sda
+	$(OUTDATED)
+%.eps: %.png
+	$(OUTDATED)
+%.eps: %.sxc
+	$(OUTDATED)
+%.eps: %.xcf
+	$(OUTDATED)
+%.eps: %.zargo
+	$(OUTDATED)
+%.eps: %.m
+	@egrep -q $(MPRINT) $< && ($(OUTDATED))

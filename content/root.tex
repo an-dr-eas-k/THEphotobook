@@ -1,0 +1,125 @@
+\documentclass[12pt,final,ngerman]{article}
+
+% TODOs:
+
+% initial definitions {{{1
+\usepackage{THEphotobook}
+\usepackage{german}
+\usepackage[T1]{fontenc}
+\renewcommand*\sfdefault{lmssq}
+\renewcommand*\familydefault{\sfdefault}
+
+\usepackage{mdframed}
+\usepackage[margin=0pt,font=small,labelfont=bf,justification=justified,singlelinecheck=false]{caption}
+\usepackage{calc}
+
+\usepackage[paperheight=276mm, paperwidth=201mm, left=3mm, top=10mm, right=3mm, bottom=10mm, twoside]{geometry}
+
+\usepackage{array}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \photoF{168}{media/IMG_4768_m.JPG}{0}{0} % ringe
+% \clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{aorange}{rgb}{0.8203125,0.7421875,0.65234375}
+\definecolor{weinrot}{rgb}{0.65490196078431372549,0.11372549019607843137,0.18039215686274509803}
+\definecolor{ahellblau}{rgb}{0.62352941176470588235,0.78431372549019607843,1}
+\definecolor{adunkelblau1}{rgb}{0.3,0.43,0.666}
+\definecolor{adunkelblau2}{rgb}{0.03,0,0.455}
+%\definecolor{adunkelblau3}{rgb}{0.309,0.427,0.855}
+\definecolor{adunkelblau3}{RGB}{102,135,255}
+\definecolor{adunkelblau4}{RGB}{143,194,239}
+\definecolor{adunkelblau5}{RGB}{73,159,236}
+\definecolor{adunkelblau6}{RGB}{98,113,255}
+\definecolor{adunkelrot}{RGB}{137,0,0}
+\definecolor{agruen}{RGB}{40,168,40}
+\definecolor{afg}{RGB}{217,0,101}
+\definecolor{aorange}{RGB}{217,126,0}
+\definecolor{arot1}{RGB}{213,56,49}
+\definecolor{arot2}{RGB}{255,104,81}
+\definecolor{giesrot}{RGB}{199,21,29}
+%\pagecolor{adunkelblau1}
+\pagecolor{adunkelblau1}
+\THEboxcolor{white}
+\THEtextcolor{adunkelblau2}
+%\color{adunkelblau2}
+
+\pdfinfo{
+/Title (a im Grundschulalter)
+/Author (Mildred und Andreas Kirschner)
+/Subject (Geschenk zur Weihnacht 2019)
+/Keywords (Impressionen)
+/Trapped (False)
+}
+% }}}
+% \filenames
+
+% \usepackage{eso-pic}
+% \AddToShipoutPicture{%
+% \linethickness{15cm}
+% \color{adunkelblau1}% dunkelblau
+% % \multiput(-10,0)(0,97){26}%
+% \put(-1000,100){\line(1,0){2000}}
+% % \linethickness{19mm}
+% % \color{adunkelblau4}
+% % \multiput(-10,0)(0,131){26}%
+% % {\line(1,0){2000}}
+% % \color{adunkelblau3}% am hellsten
+% % \linethickness{3mm}
+% % \multiput(-10,0)(0,37){26}%
+% % {\line(1,0){2000}}
+% }
+
+
+\begin{document}
+\renewcommand\bordercolor{white}
+\renewcommand\captioncolor{blue}
+
+\input{content}
+%\input{content2} %
+%\null\clearpage
+
+
+
+% some templates {{{1
+%\doublephotoC{110}{}{}{}{168}
+%\photoFC{100}{}{}{}{0}
+%\photoFC{110}{}{}{}{0}
+%\photoFC{120}{}{}{}{0}
+%\photoFC{126}{}{}{}{0}
+%\photoFC{148}{}{}{}{0}
+%\photoFC{167}{}{}{}{0}
+%\photoFC{168}{}{}{}{0}
+%\photoFC{80}{}{}{}{0}
+%\photoFC{90}{}{}{}{0}
+%\photoFC{94}{}{}{}{0}
+% \photoFC{100}{media/ultraschall_2009-02-03-crop.jpg}{3. Februar 2009}{0}{0}
+% \doublephotoC{110}{media/2009-07-03.cimg0636.jpg}{media/2009-07-04.cimg0687.jpg}{3. und 4. Juli}{170}
+% \photoFC{126}{media/2009-07-02.cimg0628.crop.jpeg}{2. Juli}{0}{0}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% photoNouveau beispiel
+%
+%\photoNouveauM{160mm}{media/IMG_0102.JPG}{mycapt;mysubcapt}{}{}{}{}
+%\photoNouveauM{160mm}{media/IMG_0162.JPG}{foo;fooo}{media/IMG_0162.JPG}{bar;baar}{}{}
+%\clearpage
+%\renewcommand\bordercolor{white}
+%\renewcommand\captioncolor{blue}
+%\renewcommand\borderwidth{2mm}
+%\pagecolor{green}
+%\photoNouveauM{160mm}{media/IMG_0102.JPG}{mycapt;mysubcapt}{}{}{}{}
+%\photoNouveauM{160mm}{media/IMG_0162.JPG}{foo;fooo}{media/IMG_0162.JPG}{bar;baar}{media/IMG_0162.JPG}{baz;baaz}
+%\clearpage
+%\photoNouveauM{160mm}{media/IMG_0162.JPG}{foo;fooo}{media/IMG_0162.JPG}{bar;baar}{}{}
+%\photoNouveauM{160mm}{media/IMG_0162.JPG}{foo;fooo}{media/IMG_0162.JPG}{bar;baar}{media/IMG_0162.JPG}{baz;baaz}
+%\photoNouveauM{media/IMG_0162.JPG}{foo}{fooo}{media/IMG_0162.JPG}{bar}{baar}{}{}{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% }}}
+
+
+\end{document}
+% vim: smartindent:spell:spelllang=de:lbr:foldmethod=marker
