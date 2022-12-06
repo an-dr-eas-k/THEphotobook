@@ -67,7 +67,7 @@ function Write-ThePhotos {
 	)
 	Import-MetadataExtractor
 	[System.Threading.Thread]::CurrentThread.CurrentCulture = $Culture
-	jhead -autorot (Join-Path $Path "*")
+	jhead -autorot (Join-Path $Path "*") *>&1 | Write-Verbose
 	$photos = @( $Path | Get-ChildItem -File | % { $p = [ThePhoto]::new($_); $p | Write-Verbose; $p } | Sort-Object -Property Date )
 
 	$neededSpace = 0
