@@ -20,12 +20,16 @@ class ThePhoto {
 			?? $this.GetTag("File Modified Date", "File", $metadata)
 		$dateString | Write-Verbose
 
+		$errors = @()
 		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
 			try {
 				$this.Date = $f.Invoke($dateString)[0]
 				break
 			}
-			catch [System.Exception] { $_ | Write-Warning }
+			catch [System.Exception] { $errors += $_ }
+		}
+		if (-not $this.Date){
+			$errors | Write-Warning
 		}
 	}
 
@@ -63,6 +67,7 @@ function Write-ThePhotos {
 	)
 	Import-MetadataExtractor
 	[System.Threading.Thread]::CurrentThread.CurrentCulture = $Culture
+	jhead -autorot (Join-Path $Path "*")
 	$photos = @( $Path | Get-ChildItem -File | % { $p = [ThePhoto]::new($_); $p | Write-Verbose; $p } | Sort-Object -Property Date )
 
 	$neededSpace = 0
@@ -111,7 +116,7 @@ function Import-MetadataExtractor {
 		$PublishDir = "$PSScriptRoot/metadata-extractor-dotnet/MetadataExtractor.PowerShell/bin/Debug/net40/publish"
 	)
 	get-childItem $PublishDir | ? { $_ -match "dll$" } | % { Add-Type -Path $_.FullName }
-	Import-Module -Force "$PublishDir/MetadataExtractor.PowerShell.dll" -Global 
+	Import-Module -Force "$PublishDir/MetadataExtractor.PowerShell.dll" -Global *>&1 | Out-Null
 }
 
 function Add-ThePhoto {
@@ -130,7 +135,5 @@ function Add-ThePhoto {
 		"added $photo" | Write-Verbose
 	}
 }
-
-
 
 Export-ModuleMember -Function Import-MetadataExtractor, Write-ThePhotos, Add-ThePhoto
