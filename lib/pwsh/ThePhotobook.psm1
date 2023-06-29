@@ -62,6 +62,26 @@ class ThePhoto {
 	}
 }
 
+function Read-ThePhotos {
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory)]
+		$Path,
+		$SortProperty = "Date"
+	)
+	$OrderPos = 0
+	$OrderIncrement = 10
+	@( 
+		$Path `
+		| Get-ChildItem -File `
+		| % { $p = [ThePhoto]::new($_); $p | Write-Verbose; $p } `
+		| Sort-Object -Property $SortProperty `
+		| % { 
+			$OrderPos += $OrderIncrement; 
+			$_.OrderPos = $OrderPos }
+	)
+}
+
 function Write-ThePhotos {
 	[CmdletBinding()]
 	param(
@@ -81,7 +101,7 @@ function Write-ThePhotos {
 	$jheadCmd = "jhead -autorot $jheadInput *>&1"
 	$jheadCmd | Write-Verbose
 	Invoke-Expression $jheadCmd | Write-Verbose
-	$photos = @( $Path | Get-ChildItem -File | % { $p = [ThePhoto]::new($_); $p | Write-Verbose; $p } | Sort-Object -Property Date )
+	$photos = Read-ThePhotos -Path $Path
 
 	$neededSpace = 2
 	for ($i = 0; $i -lt $photos.Length; $i++) {
