@@ -1,3 +1,8 @@
+#
+# pwsh -wd (Get-Location) -command { ls ./media/working/ | %{ Write-ThePhotos -Path "$_/*" -Verbose > "./content.$($_.name.ToLower() -replace ' ','' ).tex" }; make -B }
+#
+
+
 $script:MaxPicWidth = 170
 
 class ThePhoto {
@@ -8,21 +13,15 @@ class ThePhoto {
 	[bool]$Upright;
 	[datetime]$Date;
 	[string]$Comment;
+	[int]$OrderPos;
 
 	ThePhoto(	[System.IO.FileInfo]$Path	) {
 		$this.Path = $Path
-		$metadata = Extract-Metadata -FilePath $Path.FullName -Raw
-		$this.Height = $this.GetTag("Image Height", $metadata)
-		$this.Width = $this.GetTag("Image Width", $metadata)
-		$this.Upright = $this.Height -gt $this.Width
-		$this.Comment = $this.GetTag("User Comment", $metadata) `
-			-replace "&", "\&"
-		$dateString = $null `
-			?? $this.GetTag("Date.*Original", "Exif", $metadata) `
-			?? $this.GetTag("Date.*Original", "XMP", $metadata) `
-			?? $this.GetTag("File Modified Date", "File", $metadata) `
-			?? ""
+		$this.readTagsWithMetadataExtractor($Path)
+		# $metadata = [TagLib.File]::Create($Path.FullName)
+	}
 
+	[void] readPhotoDate($dateString) {
 		$errors = @()
 		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
 			try {
@@ -34,6 +33,21 @@ class ThePhoto {
 		if (-not $this.Date) {
 			("errors: ", $errors) | Write-Warning
 		}
+	}
+
+	[void] readTagsWithMetadataExtractor($path) {
+		$metadata = Extract-Metadata -FilePath $path.FullName -Raw
+		$this.Height = $this.GetTag("Image Height", $metadata)
+		$this.Width = $this.GetTag("Image Width", $metadata)
+		$this.Upright = $this.Height -gt $this.Width
+		$this.Comment = $this.GetTag("User Comment", $metadata) `
+			-replace "&", "\&"
+		$dateString = $null `
+			?? $this.GetTag("Date.*Original", "Exif", $metadata) `
+			?? $this.GetTag("Date.*Original", "XMP", $metadata) `
+			?? $this.GetTag("File Modified Date", "File", $metadata) `
+			?? ""
+		$this.readPhotoDate($dateString)
 	}
 
 	[string] GetTag([string]$tagPattern, [array]$metadata) {
@@ -78,7 +92,8 @@ function Read-ThePhotos {
 		| Sort-Object -Property $SortProperty `
 		| % { 
 			$OrderPos += $OrderIncrement; 
-			$_.OrderPos = $OrderPos }
+			$_.OrderPos = $OrderPos;
+			$_ }
 	)
 }
 
@@ -167,4 +182,4 @@ function Add-ThePhoto {
 	}
 }
 
-Export-ModuleMember -Function Import-MetadataExtractor, Write-ThePhotos, Add-ThePhoto
+Export-ModuleMember -Function Import-MetadataExtractor, Write-ThePhotos, Add-ThePhoto, *
