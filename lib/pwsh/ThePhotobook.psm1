@@ -15,12 +15,13 @@ class ThePhoto {
 		$this.Height = $this.GetTag("Image Height", $metadata)
 		$this.Width = $this.GetTag("Image Width", $metadata)
 		$this.Upright = $this.Height -gt $this.Width
-		$this.Comment = $this.GetTag("User Comment", $metadata)
+		$this.Comment = $this.GetTag("User Comment", $metadata) `
+			-replace "&", "\&"
 		$dateString = $null `
 			?? $this.GetTag("Date.*Original", "Exif", $metadata) `
 			?? $this.GetTag("Date.*Original", "XMP", $metadata) `
-			?? $this.GetTag("File Modified Date", "File", $metadata)
-		$dateString | Write-Verbose
+			?? $this.GetTag("File Modified Date", "File", $metadata) `
+			?? ""
 
 		$errors = @()
 		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
@@ -30,8 +31,8 @@ class ThePhoto {
 			}
 			catch [System.Exception] { $errors += $_ }
 		}
-		if (-not $this.Date){
-			$errors | Write-Warning
+		if (-not $this.Date) {
+			("errors: ", $errors) | Write-Warning
 		}
 	}
 
@@ -43,7 +44,9 @@ class ThePhoto {
 		return $metadata `
 		| ? { (-not $directoryPattern) -or ($_.Directory -match $directoryPattern ) }`
 		| ? { $_.Tag -match $tagPattern } `
-		| Select-Object -First 1 -ExpandProperty RawValue
+		| ? { $_.RawValue -isnot [System.Byte[]] } `
+		| Select-Object -First 1 -ExpandProperty RawValue `
+		| % { "tag '$tagPattern' $(if ( $directoryPattern){ "(directory: '$directoryPattern') "})has value '$_'" | Write-Verbose; $_ }
 	}
 
 	[int] GetOptimalWidth() {
@@ -71,7 +74,7 @@ function Write-ThePhotos {
 	[System.Threading.Thread]::CurrentThread.CurrentCulture = $Culture
 
 	$jheadInput = $Path
-	if ((($Path | Get-Item) -as [System.IO.DirectoryInfo])?.Exists){
+	if ((($Path | Get-Item) -as [System.IO.DirectoryInfo])?.Exists) {
 		$jheadInput = (Join-Path $Path "*")
 	}
 
@@ -124,7 +127,7 @@ function Import-MetadataExtractor {
 		$PublishDir = "$PSScriptRoot/metadata-extractor-dotnet/MetadataExtractor.PowerShell/bin/Debug/net40/publish"
 	)
 	get-childItem $PublishDir | ? { $_ -match "dll$" } | % { Add-Type -Path $_.FullName }
-	Import-Module -Force "$PublishDir/MetadataExtractor.PowerShell.dll" -Global *>&1 | Out-Null
+	Import-Module -Force -Global "$PublishDir/MetadataExtractor.PowerShell.dll" *>&1 | Write-Verbose
 }
 
 function Add-ThePhoto {
