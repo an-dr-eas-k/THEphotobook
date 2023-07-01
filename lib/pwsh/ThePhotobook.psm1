@@ -2,7 +2,6 @@
 # pwsh -wd (Get-Location) -command { ls ./media/working/ | %{ Write-ThePhotos -Path "$_/*" -Verbose > "./content.$($_.name.ToLower() -replace ' ','' ).tex" }; make -B }
 #
 
-
 $script:MaxPicWidth = 170
 
 class ThePhoto {
@@ -17,8 +16,8 @@ class ThePhoto {
 
 	ThePhoto(	[System.IO.FileInfo]$Path	) {
 		$this.Path = $Path
-		$this.readTagsWithMetadataExtractor($Path)
-		# $metadata = [TagLib.File]::Create($Path.FullName)
+		# $this.readTagsWithMetadataExtractor($Path)
+		$this.readTagsWithTagLib($Path)
 	}
 
 	[void] readPhotoDate($dateString) {
@@ -35,7 +34,26 @@ class ThePhoto {
 		}
 	}
 
-	[void] readTagsWithMetadataExtractor($path) {
+	[void] readTagsWithTagLib([System.IO.FileInfo]$path) {
+		$metadata = $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @($path.FullName))
+		$this.Height = $metadata.Properties.PhotoHeight
+		$this.Width = $metadata.Properties.PhotoWidth
+		$this.Upright = $this.Height -gt $this.Width
+		$this.Comment = ($metadata.Tag.Comment	-replace ("&", "\&") -replace ("digital camera", "")).Trim()
+		$dateString = $null `
+			?? $metadata.Tag.Exif.DateTimeOriginal `
+			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
+			?? $path.LastWriteTime `
+			?? ""
+		if ($dateString -is [datetime]) {
+			$this.Date = $dateString
+		}
+		else {
+			$this.readPhotoDate($dateString)
+		}
+	}
+
+	[void] readTagsWithMetadataExtractor([System.IO.FileInfo]$path) {
 		$metadata = Extract-Metadata -FilePath $path.FullName -Raw
 		$this.Height = $this.GetTag("Image Height", $metadata)
 		$this.Width = $this.GetTag("Image Width", $metadata)
@@ -47,7 +65,12 @@ class ThePhoto {
 			?? $this.GetTag("Date.*Original", "XMP", $metadata) `
 			?? $this.GetTag("File Modified Date", "File", $metadata) `
 			?? ""
-		$this.readPhotoDate($dateString)
+		if ($dateString -is [datetime]) {
+			$this.Date = $dateString
+		}
+		else {
+			$this.readPhotoDate($dateString)
+		}
 	}
 
 	[string] GetTag([string]$tagPattern, [array]$metadata) {
@@ -105,7 +128,6 @@ function Write-ThePhotos {
 		$Culture = "de_de",
 		$WinSize = 5
 	)
-	Import-MetadataExtractor
 	[System.Threading.Thread]::CurrentThread.CurrentCulture = $Culture
 
 	$jheadInput = $Path
@@ -156,6 +178,23 @@ function Write-ThePhotos {
 	}
 }
 
+function Import-TagLibSharp {
+	[Cmdletbinding()]
+	param(
+		$NugetLibrary = "TagLibSharp",
+		$LibrarySegment = "taglibsharp/lib/netstandard2.0/TagLibSharp.dll"
+	)
+	$LibrarySegment = Join-Path $PSScriptRoot $LibrarySegment | Get-Item
+	if (-not (Test-Path $LibrarySegment)) {
+		$libDir = New-Item -ItemType Directory -Force "$($PSScriptRoot)/taglibsharp"
+		Register-PackageSource -Name MyNuGet -Location https://www.nuget.org/api/v2 -ProviderName NuGet -Force
+		Find-Package -Provider NuGet -Name $NugetLibrary | Save-Package -Path $libDir
+		Expand-Archive $libDir/*.nupkg -DestinationPath $libDir
+	}
+	Add-Type -Path $LibrarySegment
+	$script:assembly = [System.Reflection.Assembly]::LoadFrom($LibrarySegment)
+}
+
 function Import-MetadataExtractor {
 	[Cmdletbinding()]
 	param(
@@ -181,5 +220,8 @@ function Add-ThePhoto {
 		"added $photo" | Write-Verbose
 	}
 }
+
+Import-TagLibSharp
+# Import-MetadataExtractor
 
 Export-ModuleMember -Function Import-MetadataExtractor, Write-ThePhotos, Add-ThePhoto, *
