@@ -19,7 +19,6 @@ class ThePhoto {
 
 	ThePhoto(	[System.IO.FileInfo]$Path	) {
 		$this.Path = $Path
-		# $this.readTagsWithMetadataExtractor($Path)
 		$this.readTagsWithTagLib($Path)
 	}
 
@@ -48,26 +47,6 @@ class ThePhoto {
 			?? $metadata.Tag.Exif.DateTimeOriginal `
 			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
 			?? $path.LastWriteTime `
-			?? ""
-		if ($dateString -is [datetime]) {
-			$this.Date = $dateString
-		}
-		else {
-			$this.readPhotoDate($dateString)
-		}
-	}
-
-	[void] readTagsWithMetadataExtractor([System.IO.FileInfo]$path) {
-		$metadata = Extract-Metadata -FilePath $path.FullName -Raw
-		$this.Height = $this.GetTag("Image Height", $metadata)
-		$this.Width = $this.GetTag("Image Width", $metadata)
-		$this.Upright = $this.Height -gt $this.Width
-		$this.Comment = $this.GetTag("User Comment", $metadata) `
-			-replace "&", "\&"
-		$dateString = $null `
-			?? $this.GetTag("Date.*Original", "Exif", $metadata) `
-			?? $this.GetTag("Date.*Original", "XMP", $metadata) `
-			?? $this.GetTag("File Modified Date", "File", $metadata) `
 			?? ""
 		if ($dateString -is [datetime]) {
 			$this.Date = $dateString
@@ -255,15 +234,6 @@ function Import-TagLibSharp {
 	$script:assembly = [System.Reflection.Assembly]::LoadFrom($LibrarySegment)
 }
 
-function Import-MetadataExtractor {
-	[Cmdletbinding()]
-	param(
-		$PublishDir = "$PSScriptRoot/metadata-extractor-dotnet/MetadataExtractor.PowerShell/bin/Debug/net40/publish"
-	)
-	get-childItem $PublishDir | ? { $_ -match "dll$" } | % { Add-Type -Path $_.FullName }
-	Import-Module -Force -Global "$PublishDir/MetadataExtractor.PowerShell.dll" *>&1 | Write-Verbose
-}
-
 function Add-ThePhoto {
 	[Cmdletbinding()]
 	param(
@@ -282,6 +252,5 @@ function Add-ThePhoto {
 }
 
 Import-TagLibSharp
-# Import-MetadataExtractor
 
-Export-ModuleMember -Function Import-MetadataExtractor, Write-ThePhotos, Add-ThePhoto, *
+Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto
