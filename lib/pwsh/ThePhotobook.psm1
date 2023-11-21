@@ -78,7 +78,7 @@ class ThePhoto {
 
 		return [Math]::Min(110 / $this.Height * $this.Width, $script:MaxPicWidth)
 	}
-    
+	
 	[string] GetHumanDate() {
 		if ($this.Date.ToLongTimeString() -eq "00:00:00") {
 			return ""
@@ -251,6 +251,27 @@ function Add-ThePhoto {
 	}
 }
 
+
+function New-ThePhotoSymbolicLink {
+	[Cmdletbinding()]
+	param(
+		$InputFiles = "*",
+		[Parameter(Mandatory)]
+		$OutputDir
+	)
+	if (-not (Test-Path -Path $OutputDir)) {
+		throw "Output directory $OutputDir does not exist"
+	}
+	Read-ThePhotos -Path $InputFiles `
+	| % { 
+		New-Item `
+			-ItemType SymbolicLink `
+			-Value $_.Path `
+			-Path "./$($OutputDir)/$($_.GetOrderPos())__$($_.GetPath().Name)" `
+		| Out-Null
+	} 
+}
+
 Import-TagLibSharp
 
-Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto
+Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto, Read-ThePhotos, New-ThePhotoSymbolicLink
