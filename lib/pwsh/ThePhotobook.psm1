@@ -5,6 +5,13 @@
 #
 
 $script:MaxPicWidth = 170
+$script:MaxPageHeight = 180
+
+class AdditionalMetaData {
+
+	[Nullable[int]]$FixedWidth
+	[Nullable[int]]$NeighborsWanted
+}
 
 class ThePhoto {
 
@@ -15,24 +22,48 @@ class ThePhoto {
 	[datetime]$Date;
 	[string]$Comment;
 	[int]$OrderPos;
-	[psobject]$MetaJsonFromTitle
+	[AdditionalMetaData]$MetaJsonFromTitle
 
 	ThePhoto(	[System.IO.FileInfo]$Path	) {
 		$this.Path = $Path
-		$this.readTagsWithTagLib($Path)
+		try {
+			$this.readTagsWithTagLib($Path)
+		}
+		catch {
+			"problem with image $path" | Write-Error
+			$_ | Write-Error
+		}
 	}
 
-	[void] readPhotoDate($dateString) {
+	[datetime] readPhotoDate($dateString) {
 		$errors = @()
 		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
 			try {
-				$this.Date = $f.Invoke($dateString)[0]
-				break
+				return $f.Invoke($dateString)[0]
 			}
 			catch [System.Exception] { $errors += $_ }
 		}
-		if (-not $this.Date) {
-			("errors: ", $errors) | Write-Warning
+		throw ("errors: ", $errors) 
+	}
+
+	[void] readDateWithTagLib($metadata, [System.IO.FileInfo]$path) {
+
+		@{
+			"exif"          = $metadata.Tag.Exif.DateTimeOriginal
+			"xmp"           = $metadata.ImageTag.Xmp.NodeTree.Children 
+			"xmpParsed"     = ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) 
+			"lastwritetime" = $path.LastWriteTime 
+		} | ConvertTo-Json | Write-Debug
+		$dateString = $null `
+			?? $metadata.Tag.Exif.DateTimeOriginal `
+			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
+			?? $path.LastWriteTime `
+			?? ""
+		if ($dateString -is [datetime]) {
+			$this.Date = $dateString
+		}
+		else {
+			$this.Date = $this.readPhotoDate($dateString)
 		}
 	}
 
@@ -43,17 +74,7 @@ class ThePhoto {
 		$this.Upright = $this.Height -gt $this.Width
 		$this.Comment = ($metadata.Tag.Comment	-replace ("&", "\&") -replace ("digital camera", "")).Trim()
 		$this.MetaJsonFromTitle = ($metadata.Tag.Title ?? "" ) | ConvertFrom-Json -ErrorAction Continue
-		$dateString = $null `
-			?? $metadata.Tag.Exif.DateTimeOriginal `
-			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
-			?? $path.LastWriteTime `
-			?? ""
-		if ($dateString -is [datetime]) {
-			$this.Date = $dateString
-		}
-		else {
-			$this.readPhotoDate($dateString)
-		}
+		$this.readDateWithTagLib($metadata, $path)
 	}
 
 	[string] GetTag([string]$tagPattern, [array]$metadata) {
@@ -77,6 +98,29 @@ class ThePhoto {
 		}
 
 		return [Math]::Min(110 / $this.Height * $this.Width, $script:MaxPicWidth)
+	}
+
+	[int] GetOptimalHeight() {
+		return $this.GetOptimalWidth() / $this.Width * $this.Height
+	}
+	
+	[bool] RequestThirdNeighbor() {
+		if ($this.MetaJsonFromTitle.NeighborsWanted -eq 2) {
+			return $true
+		}
+		return $false
+		# -and ($pmd.GetOptimalWidth() + $other.GetOptimalWidth() -lt $script:MaxPicWidth)) {
+	}
+
+	[bool] IsNeighborPossible() {
+		if ($this.MetaJsonFromTitle.NeighborsWanted -eq 0) {
+			return $false
+		}
+		if ($this.GetOptimalWidth() -gt ($script:MaxPicWidth / 3 * 2)) {
+			return $false
+		}
+
+		return $this.Upright
 	}
 	
 	[string] GetHumanDate() {
@@ -142,40 +186,57 @@ function Write-ThePhotos {
 	Invoke-Expression $jheadCmd | Write-Verbose
 	$photos = @(Read-ThePhotos -Path $Path -SortProperty $SortProperty)
 
-	$neededSpace = 2
+	$neededSpace = 0
 	for ($i = 0; $i -lt $photos.Length; $i++) {
 		[ThePhoto]$pmd = $photos[$i]
 		if (-not $pmd) {
 			continue
 		}
-		if ($neededSpace % 4 -eq 0) {
-			"\clearpage" 
+		$photos[$i] = $null
+		if ($neededSpace -gt $script:MaxPageHeight) {
+			"\clearpage  % $neededSpace"
+			$neededSpace = 0
 		}
-		if (-not ($pmd.Upright)) {
-			Write-PhotoSegment -Photo $pmd
-			$neededSpace += 1
-			$photos[$i] = $null
+		[ThePhoto]$other = $null
+		[ThePhoto]$third = $null
+		if ($pmd.IsNeighborPossible()) {
+			$other = Find-Neighbor -StartPos $i -WinSize $WinSize -PhotoList ([ref]$photos)
+			if ($true `
+					-and $other `
+					-and $pmd.RequestThirdNeighbor()) {
+				"%% searching for third neighbor primary is $($pmd.Path)"
+				$third = Find-Neighbor -StartPos ($i + 1) -WinSize $WinSize -PhotoList ([ref]$photos)
+			}
+		}
+		if ($third) {
+			Write-PhotoSegment -Photo $pmd -Other $other -Third $third
+			$neededSpace += [System.Math]::Max([System.Math]::Max($pmd.GetOptimalHeight(), $other.GetOptimalHeight()), $third.GetOptimalHeight())
+		}
+		elseif ($other) {
+			Write-PhotoSegment -Photo $pmd -Other $other
+			$neededSpace += [System.Math]::Max($pmd.GetOptimalHeight(), $other.GetOptimalHeight())
 		}
 		else {
-			$r = @()
-			$r += (($i + 1)..($i + $WinSize))
-			$pairFound = $false
-			foreach ($j in $r) {
-				[ThePhoto]$other = $photos[$j]
-				if ( (-not $other) -or (-not $other.Upright)) {
-					continue
-				}
-				Write-PhotoSegment -Photo $pmd -Other $other
-				$neededSpace += 1
-				$pairFound = $true
-				$photos[$j] = $null
-				break
-			}
-			if (-not $pairFound) {
-				Write-PhotoSegment -Photo $pmd
-				$neededSpace += 1
-				$photos[$i] = $null
-			}
+			Write-PhotoSegment -Photo $pmd
+			$neededSpace += $pmd.GetOptimalHeight()
+		}
+	}
+}
+
+function Find-Neighbor {
+	[CmdletBinding()]
+	param (
+		$StartPos,
+		$WinSize,
+		$PhotoList
+	)
+	$r = @()
+	$r += (($StartPos + 1)..($StartPos + $WinSize))
+	foreach ($j in $r) {
+		[ThePhoto]$other = $PhotoList.Value[$j]
+		if ( ($other) -and ($other.IsNeighborPossible())) {
+			$PhotoList.Value[$j] = $null
+			return $other
 		}
 	}
 }
@@ -183,11 +244,50 @@ function Write-ThePhotos {
 function Write-PhotoSegment {
 	param(
 		[ThePhoto]$Photo,
-		[ThePhoto]$Other = $null
+		[ThePhoto]$Other = $null,
+		[ThePhoto]$Third = $null
 	)
-	if ($true `
-			-and (-not $Other) `
-			-and (-not $Photo.GetHumanDate())) {
+	
+	if ($Third) {
+		$prefix = "\photoNouveauM{$($script:MaxPicWidth)mm}"
+
+		$firstSegment = ( "" `
+				+ "{ $($Photo.Path | Resolve-RelativePath) }" `
+				+ "{ $($Photo.GetHumanDate()); " `
+				+ "$($Photo.Comment) }" )
+
+		$secondSegment = ( "" `
+				+ "{ $($Other.Path | Resolve-RelativePath) }" `
+				+ "{ $($Other.GetHumanDate()); " `
+				+ "$($Other.Comment) }" )
+
+		$thirdSegment = ( "" `
+				+ "{ $($Third.Path | Resolve-RelativePath) }" `
+				+ "{ $($Third.GetHumanDate()); " `
+				+ "$($Third.Comment) }" )
+
+		return ($prefix, $firstSegment, $secondSegment, $thirdSegment -join "" )
+	}
+	elseif ($Photo.GetHumanDate()) {
+		$prefix = "\photoNouveauN"
+
+		$first = ( "" `
+				+ "{ $($Photo.Path | Resolve-RelativePath) }" `
+				+ "{ $($Photo.GetOptimalWidth())mm }" `
+				+ "{ $($Photo.GetHumanDate()); " `
+				+ "$($Photo.Comment) }" )
+
+		$second = "{}{}{}"
+		if ($Other) {
+			$second = ( "" `
+					+ "{ $($Other.Path | Resolve-RelativePath) }" `
+					+ "{ $($Other.GetOptimalWidth())mm }" `
+					+ "{ $($Other.GetHumanDate()); " `
+					+ "$($Other.Comment) }" )
+		}
+		return ($prefix, $first, $second -join "" )
+	}
+ else {
 		return ( "" `
 				+ "\photoFC" `
 				+ "{$($Photo.GetOptimalWidth())}" `
@@ -196,25 +296,7 @@ function Write-PhotoSegment {
 				+ "{0}" `
 				+ "{0}" )
 	}
-	
-	$prefix = "\photoNouveauN"
 
-	$first = ( "" `
-			+ "{ $($Photo.Path | Resolve-RelativePath) }" `
-			+ "{ $($Photo.GetOptimalWidth())mm }" `
-			+ "{ $($Photo.GetHumanDate()); " `
-			+ "$($Photo.Comment) }" )
-
-	$second = "{}{}{}"
-	if ($Other) {
-		$second = ( "" `
-				+ "{ $($Other.Path | Resolve-RelativePath) }" `
-				+ "{ $($Other.GetOptimalWidth())mm }" `
-				+ "{ $($Other.GetHumanDate()); " `
-				+ "$($Other.Comment) }" )
-	}
-
-	return ($prefix, $first, $second -join "" )
 }
 
 function Import-TagLibSharp {
@@ -226,9 +308,9 @@ function Import-TagLibSharp {
 	$LibrarySegment = Join-Path $PSScriptRoot $LibrarySegment | Get-Item
 	if (-not (Test-Path $LibrarySegment)) {
 		$libDir = New-Item -ItemType Directory -Force "$($PSScriptRoot)/taglibsharp"
-		Register-PackageSource -Name MyNuGet -Location https: / / www.nuget.org / api / v2 -ProviderName NuGet -Force
+		Register-PackageSource -Name MyNuGet -Location "https://www.nuget.org/api/v2" -ProviderName NuGet -Force
 		Find-Package -Provider NuGet -Name $NugetLibrary | Save-Package -Path $libDir
-		Expand-Archive $libDir / * .nupkg -DestinationPath $libDir
+		Expand-Archive "$libDir/*.nupkg" -DestinationPath $libDir
 	}
 	Add-Type -Path $LibrarySegment
 	$script:assembly = [System.Reflection.Assembly]::LoadFrom($LibrarySegment)

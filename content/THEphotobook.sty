@@ -55,19 +55,19 @@
 
 \newcommand{\texta}[3]{ % {{{
 	\begin{figure}[p]
-		\centering
-		\parbox{#3mm}{%
-			\begin{#2}%
-				\textcolor{\@THEtextcolor}{#1} 
-			\end{#2}%
-		}
+	\centering
+	\parbox{#3mm}{%
+		\begin{#2}%
+		\textcolor{\@THEtextcolor}{#1}
+		\end{#2}%
+	}
 	\end{figure}
 }
 
 \newcommand{\text}[1]{ % {{{
 	\begin{figure}
 		\begin{center}
-		\textcolor{\@THEtextcolor}{#1} 
+			\textcolor{\@THEtextcolor}{#1}
 		\end{center}
 	\end{figure}
 }
@@ -80,7 +80,7 @@
 	\begin{figure}[b]
 		\begin{center}
 			\colorbox{\@THEboxcolor}{\includegraphics[height=#1mm]{#2}}
-		\hskip 10mm
+			\hskip 10mm
 			\colorbox{\@THEboxcolor}{\includegraphics[height=#1mm]{#3}}
 		\end{center}
 	\end{figure}
@@ -97,17 +97,17 @@
 		\begin{center}%
 			\colorbox{\bordercolor}{%
 				\parbox{#5mm}{%
-				{\centering%
-%				\vskip-4mm%
-				\hskip0mm\includegraphics[height=#1mm]{#2}%
-%				\hskip 4.5mm%
-				\hfill%
-				\includegraphics[height=#1mm]{#3}\hskip0mm}%
-				\ifthenelse{\equal{#4}{}}{}{\mbox{}\\[0mm]%
-				\color{\captioncolor}
-			#4%
-			\vskip1mm}}%
-		}%
+					{\centering%
+							%				\vskip-4mm%
+							\hskip0mm\includegraphics[height=#1mm]{#2}%
+							%				\hskip 4.5mm%
+							\hfill%
+							\includegraphics[height=#1mm]{#3}\hskip0mm}%
+					\ifthenelse{\equal{#4}{}}{}{\mbox{}\\[0mm]%
+						\color{\captioncolor}
+						#4%
+						\vskip1mm}}%
+			}%
 		\end{center}%
 	\end{figure}%
 }%
@@ -152,135 +152,136 @@
 		\centering%
 		\colorbox{\@THEboxcolor}{%
 			\parbox{#2mm}{%
-			\includegraphics[width=#2mm,clip,trim=0px #5px 0px #6px]{#3}%
-			\if@filenames \mbox{}\\[-3ex]%
-			\_\textbf{\StrSubstitute{#3}{_}{\_}} %\\[0cm]%
-			\fi%
-			\ifthenelse{\equal{#4}{}}{}{%
-			\mbox{}\\[-0.1em]%
-			#4%
-			\vskip 0.1em%
-			}
+				\includegraphics[width=#2mm,clip,trim=0px #5px 0px #6px]{#3}%
+				\if@filenames \mbox{}\\[-3ex]%
+					\_\textbf{\StrSubstitute{#3}{_}{\_}} %\\[0cm]%
+				\fi%
+				\ifthenelse{\equal{#4}{}}{}{%
+					\mbox{}\\[-0.1em]%
+					#4%
+					\vskip 0.1em%
+				}
 			}%
 		}%
 	\end{figure}%
-} 
+}
 
-\newcommand\al{center}
 %% import a floating foto with caption, options:
 % #1: foto-location on file system
 % #2: foto caption
 % #3: foto caption sub
 % #4: width
+\newcommand\al{center}
 \newcommand{\photoNouveau}[3]{% {{{1
 	\def\capt{\StrBefore{#3}{;}}
 	\def\subcapt{\StrBehind{#3}{;}}
-  \ifthenelse{\equal{#1}{}}{\setlength{\picwidth}{0.97\textwidth}}{\setlength{\picwidth}{#1}}%
+	\ifthenelse{\equal{#1}{}}{\setlength{\picwidth}{0.97\textwidth}}{\setlength{\picwidth}{#1}}%
 	\setlength{\framewidth}{\picwidth}
 	\addtolength{\framewidth}{\borderwidth}%
 	\addtolength{\framewidth}{\borderwidth}%
 	\ifthenelse{\lengthtest{\framewidth < 0.5\textwidth}}{\renewcommand\al{left}}{\renewcommand\al{center}}
-%
+	%
 	\begin{figure}%
 		\begin{mdframed}[align=\al,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\framewidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%
-		\centering%
-		\includegraphics[width=\picwidth]{#2}%
-		\if@filenames \mbox{}\\[-3ex]%
-      \_\textcolor{red}{
-				\textbf{\StrSubstitute{#2}{_}{\_}}
-			} %\\[0cm]%
-		\fi%
-		\ifthenelse{\equal{#3}{}}{}{%
-%			\vskip\borderwidth%
-			\caption{\color{\captioncolor}\textbf{\protect\capt} \protect\subcapt}%
-		}%
+			\centering%
+			\includegraphics[width=\picwidth]{#2}%
+			\if@filenames \mbox{}\\[-3ex]%
+				\_\textcolor{red}{
+					\textbf{\StrSubstitute{#2}{_}{\_}}
+				} %\\[0cm]%
+			\fi%
+			\ifthenelse{\equal{#3}{}}{}{%
+				%			\vskip\borderwidth%
+				\caption{\color{\captioncolor}\textbf{\protect\capt} \protect\subcapt}%
+			}%
 		\end{mdframed}%
 	\end{figure}%
 }
 
 
-\newlength{\pgap}
-%% import a floating foto with caption, options:
-% #1: fullwidth (default: textwidth)
+
+%% import max 3 floating fotos with caption netx to each other, options:
+% #1: fullwidth 
 % #2: foto-location on file system
 % #3: <foto caption>;<foto caption sub>
 % #4: foto-location on file system
 % #5: <foto caption>;<foto caption sub>
 % #6: foto-location on file system (optional)
 % #7: <foto caption>;<foto caption sub> (optional)
+\newlength{\pgap}
 \newcommand{\photoNouveauM}[7]{% {{{1
-  \ifthenelse{\equal{#1}{}}{\setlength{\fullwidth}{0.97\textwidth}}{\setlength{\fullwidth}{#1}}%
-%	\setlength{\fullwidth}{#1}%
-%	\ifthenelse{\equal{#1}{}}{%
-%    \setlength{\fullwidth}{\textwidth}%
-%  }{}%
+	\ifthenelse{\equal{#1}{}}{\setlength{\fullwidth}{0.97\textwidth}}{\setlength{\fullwidth}{#1}}%
+	%	\setlength{\fullwidth}{#1}%
+	%	\ifthenelse{\equal{#1}{}}{%
+	%    \setlength{\fullwidth}{\textwidth}%
+	%  }{}%
 	\setlength{\pgap}{0.5em}
 	\setlength{\picwidth}{\fullwidth}%
 	\ifthenelse{\equal{#4}{}}{}{%
 		\setlength{\picwidth}{0.5\fullwidth}}%
-		\addtolength{\picwidth}{-0.5\pgap}%
+	\addtolength{\picwidth}{-0.5\pgap}%
 	\ifthenelse{\equal{#6}{}}{}{%
-    \setlength{\picwidth}{0.33\fullwidth}}%
-		\addtolength{\picwidth}{-\pgap}%
+		\setlength{\picwidth}{0.33\fullwidth}}%
+	\addtolength{\picwidth}{-\pgap}%
 	\def\capt@a{\StrBefore{#3}{;}}
 	\def\subcapt@a{\StrBehind{#3}{;}}
 	\def\capt@b{\StrBefore{#5}{;}}
 	\def\subcapt@b{\StrBehind{#5}{;}}
 	\def\capt@c{\StrBefore{#7}{;}}
 	\def\subcapt@c{\StrBehind{#7}{;}}
-%
-\begin{figure}%
-        \centering%
-        \begin{subfigure}[b]{\picwidth}%
-          \begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%
-                \includegraphics[width=\textwidth]{#2}%
-                \if@filenames \mbox{}\\[-6ex]%
-                  \_\textcolor{red}{%
-										\mbox{\textbf{\StrSubstitute{#2}{_}{\_}}}%
-									} \\[1ex]%
-                \fi%
-                \vskip0.1em
-                \caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
-          \end{mdframed}%
-        \end{subfigure}%
-				\ifthenelse{\equal{#4}{}}{}{%
-				\hskip\pgap%
-%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.%
-          %(or a blank line to force the subfigure onto a new line)
-					\begin{subfigure}[b]{\picwidth}%
-						\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
-									\includegraphics[width=\textwidth]{#4}%
-									\if@filenames \mbox{}\\[-6ex]%
-										\_\textcolor{red}{%
-											\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
-										} \\[1ex]%
-									\fi%
-									\vskip0.1em
-									\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
-						\end{mdframed}%
-					\end{subfigure}%
-				}%
-				\ifthenelse{\equal{#6}{}}{}{%
-				\hskip\pgap%
-%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.
-          %(or a blank line to force the subfigure onto a new line)
-					\begin{subfigure}[b]{\picwidth}%
-						\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
-									\includegraphics[width=\textwidth]{#6}%
-									\if@filenames \mbox{}\\[-6ex]%
-										\_\textcolor{red}{%
-											\mbox{\textbf{\StrSubstitute{#6}{_}{\_}}}%
-										} \\[1ex]%
-									\fi%
-									\vskip0.1em
-									\caption{{\color{\captioncolor}\textbf{\protect\capt@c}~~\protect\subcapt@c}}%
-						\end{mdframed}%
-					\end{subfigure}%
-				}%
-\end{figure}%
+	%
+	\begin{figure}%
+		\centering%
+		\begin{subfigure}[b]{\picwidth}%
+			\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%
+				\includegraphics[width=\textwidth]{#2}%
+				\if@filenames \mbox{}\\[-6ex]%
+					\_\textcolor{red}{%
+						\mbox{\textbf{\StrSubstitute{#2}{_}{\_}}}%
+					} \\[1ex]%
+				\fi%
+				\vskip0.1em
+				\caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
+			\end{mdframed}%
+		\end{subfigure}%
+		\ifthenelse{\equal{#4}{}}{}{%
+			\hskip\pgap%
+			%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.%
+			%(or a blank line to force the subfigure onto a new line)
+			\begin{subfigure}[b]{\picwidth}%
+				\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
+					\includegraphics[width=\textwidth]{#4}%
+					\if@filenames \mbox{}\\[-6ex]%
+						\_\textcolor{red}{%
+							\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
+						} \\[1ex]%
+					\fi%
+					\vskip0.1em
+					\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
+				\end{mdframed}%
+			\end{subfigure}%
+		}%
+		\ifthenelse{\equal{#6}{}}{}{%
+			\hskip\pgap%
+			%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.
+			%(or a blank line to force the subfigure onto a new line)
+			\begin{subfigure}[b]{\picwidth}%
+				\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
+					\includegraphics[width=\textwidth]{#6}%
+					\if@filenames \mbox{}\\[-6ex]%
+						\_\textcolor{red}{%
+							\mbox{\textbf{\StrSubstitute{#6}{_}{\_}}}%
+						} \\[1ex]%
+					\fi%
+					\vskip0.1em
+					\caption{{\color{\captioncolor}\textbf{\protect\capt@c}~~\protect\subcapt@c}}%
+				\end{mdframed}%
+			\end{subfigure}%
+		}%
+	\end{figure}%
 }% }}}
 
-%% import a floating foto with caption, options:
+%% import max 2 floating fotos next to each other with caption, options:
 % #1: foto-location on file system
 % #2: foto-width
 % #3: <foto caption>;<foto caption sub>
@@ -290,47 +291,47 @@
 \newcommand{\photoNouveauN}[6]{% {{{1
 
 	\setlength{\pgap}{0.0em}
-	
+
 	\setlength{\picwidthA}{#2}%	
 	\def\capt@a{\StrBefore{#3}{;}}
 	\def\subcapt@a{\StrBehind{#3}{;}}
 
-%
-\begin{figure}%
-        \centering%
-        \begin{subfigure}[b]{\picwidthA}%
-          \begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%
-                \includegraphics[width=\textwidth]{#1}%
-                \if@filenames \mbox{}\\[-6ex]%
-                  \_\textcolor{red}{%
-										\mbox{\textbf{\StrSubstitute{#1}{_}{\_}}}%
-									} \\[1ex]%
-                \fi%
-                \vskip0.1em
-                \caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
-          \end{mdframed}%
-        \end{subfigure}%
-				\ifthenelse{\equal{#4}{}}{}{%
-				\setlength{\picwidthB}{#5}%
-				\def\capt@b{\StrBefore{#6}{;}}
-				\def\subcapt@b{\StrBehind{#6}{;}}
-				\hskip\pgap%
-%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.%
-          %(or a blank line to force the subfigure onto a new line)
-					\begin{subfigure}[b]{\picwidthB}%
-						\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
-									\includegraphics[width=\textwidth]{#4}%
-									\if@filenames \mbox{}\\[-6ex]%
-										\_\textcolor{red}{%
-											\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
-										} \\[1ex]%
-									\fi%
-									\vskip0.1em
-									\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
-						\end{mdframed}%
-					\end{subfigure}%
-				}%
-\end{figure}%
+	%
+	\begin{figure}%
+		\centering%
+		\begin{subfigure}[b]{\picwidthA}%
+			\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%
+				\includegraphics[width=\textwidth]{#1}%
+				\if@filenames \mbox{}\\[-6ex]%
+					\_\textcolor{red}{%
+						\mbox{\textbf{\StrSubstitute{#1}{_}{\_}}}%
+					} \\[1ex]%
+				\fi%
+				\vskip0.1em
+				\caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
+			\end{mdframed}%
+		\end{subfigure}%
+		\ifthenelse{\equal{#4}{}}{}{%
+			\setlength{\picwidthB}{#5}%
+			\def\capt@b{\StrBefore{#6}{;}}
+			\def\subcapt@b{\StrBehind{#6}{;}}
+			\hskip\pgap%
+			%        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.%
+			%(or a blank line to force the subfigure onto a new line)
+			\begin{subfigure}[b]{\picwidthB}%
+				\begin{mdframed}[align=center,linewidth=0pt,backgroundcolor=\bordercolor, userdefinedwidth=\textwidth,innerleftmargin=\borderwidth,innerrightmargin=\borderwidth,innertopmargin=\borderwidth,innerbottommargin=0.3em]%%
+					\includegraphics[width=\textwidth]{#4}%
+					\if@filenames \mbox{}\\[-6ex]%
+						\_\textcolor{red}{%
+							\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
+						} \\[1ex]%
+					\fi%
+					\vskip0.1em
+					\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
+				\end{mdframed}%
+			\end{subfigure}%
+		}%
+	\end{figure}%
 }% }}}
 
 % vim: foldmethod=marker
