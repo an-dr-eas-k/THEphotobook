@@ -6,11 +6,13 @@
 
 $script:MaxPicWidth = 170
 $script:MaxPageHeight = 180
+$script:OptimalPicHeight = 115
 
 class AdditionalMetaData {
 
 	[Nullable[int]]$FixedWidth
 	[Nullable[int]]$NeighborsWanted
+	[Nullable[bool]]$ClearBefore
 }
 
 class ThePhoto {
@@ -22,7 +24,9 @@ class ThePhoto {
 	[datetime]$Date;
 	[string]$Comment;
 	[int]$OrderPos;
-	[AdditionalMetaData]$MetaJsonFromTitle
+	[AdditionalMetaData]$MetaJsonFromTitle;
+	[System.Collections.ArrayList]$Messages = [System.Collections.ArrayList]::new()
+
 
 	ThePhoto(	[System.IO.FileInfo]$Path	) {
 		$this.Path = $Path
@@ -53,11 +57,17 @@ class ThePhoto {
 			"xmp"           = $metadata.ImageTag.Xmp.NodeTree.Children 
 			"xmpParsed"     = ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) 
 			"lastwritetime" = $path.LastWriteTime 
-		} | ConvertTo-Json | Write-Debug
+		} | ConvertTo-Json -WarningAction SilentlyContinue | Write-Debug
+
 		$dateString = $null `
 			?? $metadata.Tag.Exif.DateTimeOriginal `
 			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
-			?? $path.LastWriteTime `
+			?? $( `
+				$this.Messages.Add( "using imagemagick") | Out-Null; 
+				(& convert $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
+			?? $( `
+				$this.Messages.Add( "using LastWriteTime") | Out-Null; 
+				($path.LastWriteTime ) ) `
 			?? ""
 		if ($dateString -is [datetime]) {
 			$this.Date = $dateString
@@ -77,19 +87,6 @@ class ThePhoto {
 		$this.readDateWithTagLib($metadata, $path)
 	}
 
-	[string] GetTag([string]$tagPattern, [array]$metadata) {
-		return $this.GetTag($tagPattern, $null, $metadata)
-	}
-
-	[string] GetTag([string]$tagPattern, [string]$directoryPattern, [array]$metadata) {
-		return $metadata `
-		| ? { (-not $directoryPattern) -or ($_.Directory -match $directoryPattern ) }`
-		| ? { $_.Tag -match $tagPattern } `
-		| ? { $_.RawValue -isnot [System.Byte[]] } `
-		| Select-Object -First 1 -ExpandProperty RawValue `
-		| % { "tag '$tagPattern' $(if ( $directoryPattern){ "(directory: '$directoryPattern') "})has value '$_'" | Write-Verbose; $_ }
-	}
-
 	[int] GetOptimalWidth() {
 
 		$fixedWidth = $this.MetaJsonFromTitle.FixedWidth
@@ -97,11 +94,15 @@ class ThePhoto {
 			return $fixedWidth
 		}
 
-		return [Math]::Min(110 / $this.Height * $this.Width, $script:MaxPicWidth)
+		return [Math]::Min($script:OptimalPicHeight / $this.Height * $this.Width, $script:MaxPicWidth)
 	}
 
 	[int] GetOptimalHeight() {
 		return $this.GetOptimalWidth() / $this.Width * $this.Height
+	}
+
+	[bool] ClearBefore() {
+		return $this.MetaJsonFromTitle.ClearBefore
 	}
 	
 	[bool] RequestThirdNeighbor() {
@@ -131,7 +132,8 @@ class ThePhoto {
 	}
 
 	[string] ToString() {
-		return $this | ConvertTo-Json
+		$validProperties = $this.GetType().GetProperties() | % Name | ? { $this.psobject.Properties[$_].Value }
+		return $this | Select-Object $validProperties | ConvertTo-Json -Compress
 	}
 
 	[System.IO.FileInfo] GetPath() {
@@ -193,10 +195,6 @@ function Write-ThePhotos {
 			continue
 		}
 		$photos[$i] = $null
-		if ($neededSpace -gt $script:MaxPageHeight) {
-			"\clearpage  % $neededSpace"
-			$neededSpace = 0
-		}
 		[ThePhoto]$other = $null
 		[ThePhoto]$third = $null
 		if ($pmd.IsNeighborPossible()) {
@@ -208,18 +206,21 @@ function Write-ThePhotos {
 				$third = Find-Neighbor -StartPos ($i + 1) -WinSize $WinSize -PhotoList ([ref]$photos)
 			}
 		}
-		if ($third) {
-			Write-PhotoSegment -Photo $pmd -Other $other -Third $third
-			$neededSpace += [System.Math]::Max([System.Math]::Max($pmd.GetOptimalHeight(), $other.GetOptimalHeight()), $third.GetOptimalHeight())
+
+		if ($false `
+				-or ($neededSpace -gt $script:MaxPageHeight) `
+				-or ($pmd.ClearBefore() || ((!!$other) ? $other.ClearBefore() : $false) || ((!!$third) ? $third.ClearBefore() : $false))) {
+			"\clearpage  % neededSpace: $neededSpace"
+			$neededSpace = 0
 		}
-		elseif ($other) {
-			Write-PhotoSegment -Photo $pmd -Other $other
-			$neededSpace += [System.Math]::Max($pmd.GetOptimalHeight(), $other.GetOptimalHeight())
-		}
-		else {
-			Write-PhotoSegment -Photo $pmd
-			$neededSpace += $pmd.GetOptimalHeight()
-		}
+		"% neededSpace: $neededSpace" 
+
+		$neededSpace += `
+		($pmd.GetOptimalHeight(), ((!!$other) ? $other.GetOptimalHeight() : 0), ((!!$third) ? $third.GetOptimalHeight() : 0)) `
+		| Sort-Object -Descending `
+		| Select-Object -First 1
+
+		Write-PhotoSegment -Photo $pmd -Other $other -Third $third
 	}
 }
 
@@ -247,56 +248,69 @@ function Write-PhotoSegment {
 		[ThePhoto]$Other = $null,
 		[ThePhoto]$Third = $null
 	)
+	$segment = ""
 	
 	if ($Third) {
 		$prefix = "\photoNouveauM{$($script:MaxPicWidth)mm}"
 
 		$firstSegment = ( "" `
-				+ "{ $($Photo.Path | Resolve-RelativePath) }" `
-				+ "{ $($Photo.GetHumanDate()); " `
-				+ "$($Photo.Comment) }" )
+				+ "{$($Photo.Path | Resolve-RelativePath)}" `
+				+ "{$($Photo.GetHumanDate()); " `
+				+ "$($Photo.Comment)}" `
+				+ "`n% ThePhoto: " + ($Photo.ToString())
+		)
 
 		$secondSegment = ( "" `
-				+ "{ $($Other.Path | Resolve-RelativePath) }" `
-				+ "{ $($Other.GetHumanDate()); " `
-				+ "$($Other.Comment) }" )
+				+ "{$($Other.Path | Resolve-RelativePath)}" `
+				+ "{$($Other.GetHumanDate()); " `
+				+ "$($Other.Comment)}" `
+				+ "`n% ThePhoto: " + ($Other.ToString())
+		)
 
 		$thirdSegment = ( "" `
-				+ "{ $($Third.Path | Resolve-RelativePath) }" `
-				+ "{ $($Third.GetHumanDate()); " `
-				+ "$($Third.Comment) }" )
+				+ "{$($Third.Path | Resolve-RelativePath)}" `
+				+ "{$($Third.GetHumanDate()); " `
+				+ "$($Third.Comment)}" `
+				+ "`n% ThePhoto: " + ($Third.ToString())
+		)
 
-		return ($prefix, $firstSegment, $secondSegment, $thirdSegment -join "" )
+		$segment = ($prefix, $firstSegment, $secondSegment, $thirdSegment -join "`n  " )
 	}
-	elseif ($Photo.GetHumanDate()) {
+	elseif ((!!($Photo.GetHumanDate())) || (!!$Other)) {
 		$prefix = "\photoNouveauN"
 
 		$first = ( "" `
-				+ "{ $($Photo.Path | Resolve-RelativePath) }" `
-				+ "{ $($Photo.GetOptimalWidth())mm }" `
-				+ "{ $($Photo.GetHumanDate()); " `
-				+ "$($Photo.Comment) }" )
+				+ "{$($Photo.Path | Resolve-RelativePath)}" `
+				+ "{$($Photo.GetOptimalWidth())mm}" `
+				+ "{$($Photo.GetHumanDate()); " `
+				+ "$($Photo.Comment)}" `
+				+ "`n% ThePhoto: " + ($Photo.ToString())
+		)
 
 		$second = "{}{}{}"
 		if ($Other) {
 			$second = ( "" `
-					+ "{ $($Other.Path | Resolve-RelativePath) }" `
-					+ "{ $($Other.GetOptimalWidth())mm }" `
-					+ "{ $($Other.GetHumanDate()); " `
-					+ "$($Other.Comment) }" )
+					+ "{$($Other.Path | Resolve-RelativePath)}" `
+					+ "{$($Other.GetOptimalWidth())mm}" `
+					+ "{$($Other.GetHumanDate()); " `
+					+ "$($Other.Comment)}" `
+					+ "`n% ThePhoto: " + ($Other.ToString())
+			)
 		}
-		return ($prefix, $first, $second -join "" )
+		$segment = ($prefix, $first, $second -join "`n  " )
 	}
- else {
-		return ( "" `
+	else {
+		$segment = ( "" `
 				+ "\photoFC" `
 				+ "{$($Photo.GetOptimalWidth())}" `
 				+ "{$($Photo.Path | Resolve-RelativePath)}" `
 				+ "{}" `
 				+ "{0}" `
-				+ "{0}" )
+				+ "{0}" `
+				+ "`n% ThePhoto: " + ($Photo.ToString())
+		)
 	}
-
+	$segment	| Write-Output
 }
 
 function Import-TagLibSharp {
@@ -354,6 +368,19 @@ function New-ThePhotoSymbolicLink {
 	} 
 }
 
+function Read-PhotoTags {
+	[Cmdletbinding()]
+	param(
+		[Parameter(Mandatory)]
+		$InputFile
+	)
+	$InputFile = $InputFile | Get-Item
+	$InputFile.FullName | Write-Verbose
+	# $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @(($InputFile.FullName)))
+	$metadata = (& convert "$($InputFile.FullName)" json: ) | ConvertFrom-Json
+	$metadata
+}
+
 Import-TagLibSharp
 
-Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto, Read-ThePhotos, New-ThePhotoSymbolicLink
+Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto, Read-ThePhotos, New-ThePhotoSymbolicLink, Read-PhotoTags

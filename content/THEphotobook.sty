@@ -153,7 +153,7 @@
 		\colorbox{\@THEboxcolor}{%
 			\parbox{#2mm}{%
 				\includegraphics[width=#2mm,clip,trim=0px #5px 0px #6px]{#3}%
-				\if@filenames \mbox{}\\[-3ex]%
+				\if@filenames \mbox{}\\[-10ex]%
 					\_\textbf{\StrSubstitute{#3}{_}{\_}} %\\[0cm]%
 				\fi%
 				\ifthenelse{\equal{#4}{}}{}{%
@@ -201,7 +201,7 @@
 
 
 %% import max 3 floating fotos with caption netx to each other, options:
-% #1: fullwidth 
+% #1: fullwidth (default: textwidth)
 % #2: foto-location on file system
 % #3: <foto caption>;<foto caption sub>
 % #4: foto-location on file system
@@ -290,7 +290,7 @@
 % #6: <foto caption>;<foto caption sub>
 \newcommand{\photoNouveauN}[6]{% {{{1
 
-	\setlength{\pgap}{0.0em}
+	\setlength{\pgap}{0.5em}
 
 	\setlength{\picwidthA}{#2}%	
 	\def\capt@a{\StrBefore{#3}{;}}
