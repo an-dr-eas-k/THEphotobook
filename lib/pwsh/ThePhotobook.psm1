@@ -52,16 +52,10 @@ class ThePhoto {
 
 	[void] readDateWithTagLib($metadata, [System.IO.FileInfo]$path) {
 
-		@{
-			"exif"          = $metadata.Tag.Exif.DateTimeOriginal
-			"xmp"           = $metadata.ImageTag.Xmp.NodeTree.Children 
-			"xmpParsed"     = ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) 
-			"lastwritetime" = $path.LastWriteTime 
-		} | ConvertTo-Json -WarningAction SilentlyContinue | Write-Debug
-
 		$dateString = $null `
 			?? $metadata.Tag.Exif.DateTimeOriginal `
-			?? ($metadata.ImageTag.Xmp.NodeTree.Children | ? { $_.Name -eq "DateTimeOriginal" } | % Value) `
+			?? $metadata.ImageTag.Xmp.DateTime `
+			?? $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, [TagLib.IFD.Tags.IFDEntryTag]::DateTime) `
 			?? $( `
 				$this.Messages.Add( "using imagemagick") | Out-Null; 
 				(& convert $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
@@ -368,7 +362,7 @@ function New-ThePhotoSymbolicLink {
 	} 
 }
 
-function Read-PhotoTags {
+function Read-ThePhotoTags {
 	[Cmdletbinding()]
 	param(
 		[Parameter(Mandatory)]
@@ -376,11 +370,9 @@ function Read-PhotoTags {
 	)
 	$InputFile = $InputFile | Get-Item
 	$InputFile.FullName | Write-Verbose
-	# $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @(($InputFile.FullName)))
-	$metadata = (& convert "$($InputFile.FullName)" json: ) | ConvertFrom-Json
-	$metadata
+	$script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @(($InputFile.FullName)))
 }
 
 Import-TagLibSharp
 
-Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto, Read-ThePhotos, New-ThePhotoSymbolicLink, Read-PhotoTags
+Export-ModuleMember -Function Write-ThePhotos, Add-ThePhoto, Read-ThePhotos, New-ThePhotoSymbolicLink, Read-ThePhotoTags
