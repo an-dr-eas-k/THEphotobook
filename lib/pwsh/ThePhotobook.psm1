@@ -51,11 +51,11 @@ class ThePhoto {
 	}
 
 	[void] readDateWithTagLib($metadata, [System.IO.FileInfo]$path) {
-
+		# [TagLib.IFD.Tags.IFDEntryTag]::DateTime = 306, see below
 		$dateString = $null `
 			?? $metadata.Tag.Exif.DateTimeOriginal `
 			?? $metadata.ImageTag.Xmp.DateTime `
-			?? $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, [TagLib.IFD.Tags.IFDEntryTag]::DateTime) `
+			?? $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, 306) `
 			?? $( `
 				$this.Messages.Add( "using imagemagick") | Out-Null; 
 				(& convert $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
