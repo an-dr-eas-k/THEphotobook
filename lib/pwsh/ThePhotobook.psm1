@@ -35,7 +35,7 @@ class ThePhoto {
 		}
 		catch {
 			"problem with image $path" | Write-Error
-			$_ | Write-Error
+			$_ | ConvertTo-Json | Write-Error
 		}
 	}
 
@@ -58,7 +58,7 @@ class ThePhoto {
 			?? $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, 306) `
 			?? $( `
 				$this.Messages.Add( "using imagemagick") | Out-Null; 
-				(& convert $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
+				(& magick $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
 			?? $( `
 				$this.Messages.Add( "using LastWriteTime") | Out-Null; 
 				($path.LastWriteTime ) ) `
