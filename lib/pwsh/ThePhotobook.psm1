@@ -201,10 +201,12 @@ function Write-ThePhotos {
 			}
 		}
 
-		if ($false `
-				-or ($neededSpace -gt $script:MaxPageHeight) `
-				-or ($pmd.ClearBefore() || ((!!$other) ? $other.ClearBefore() : $false) || ((!!$third) ? $third.ClearBefore() : $false))) {
-			"\clearpage  % neededSpace: $neededSpace"
+		if ($neededSpace -gt $script:MaxPageHeight) {
+			"\clearpage  % neededSpace: $neededSpace exeeds MaxPageHeight: $($script:MaxPageHeight)"
+			$neededSpace = 0
+		}
+		if ($pmd.ClearBefore() || ((!!$other) ? $other.ClearBefore() : $false) || ((!!$third) ? $third.ClearBefore() : $false)) {
+			"\clearpage  % clearBefore"
 			$neededSpace = 0
 		}
 		"% neededSpace: $neededSpace" 
