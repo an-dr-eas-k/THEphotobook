@@ -299,7 +299,7 @@ function Write-PhotoSegment {
 
 		$segment = ($prefix, $firstSegment, $secondSegment, $thirdSegment -join "`n  " )
 	}
-	elseif ($Other) {
+	else {
 		$prefix = "\photoNouveauN"
 
 		$first = ( "" `
@@ -319,17 +319,6 @@ function Write-PhotoSegment {
 			)
 		}
 		$segment = ($prefix, $first, $second -join "`n  " )
-	}
-	else {
-		$segment = ( "" `
-				+ "\photoFC" `
-				+ "{$($Photo.GetOptimalWidth())}" `
-				+ "{$($Photo.Path | Resolve-RelativePath)}" `
-				+ "{}" `
-				+ "{0}" `
-				+ "{0}" `
-				+ "`n% ThePhoto: " + ($Photo.ToString())
-		)
 	}
 	$segment	| Write-Output
 }
