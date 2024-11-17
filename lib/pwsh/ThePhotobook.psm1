@@ -90,7 +90,7 @@ class ThePhoto {
 	[void] readTagsWithTagLib([System.IO.FileInfo]$path) {
 		$metadata = $null
 		try {
-		$metadata = $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @($path.FullName))
+			$metadata = $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @($path.FullName))
 		}
 		catch {
 			"problem with image $path. You should delete all metadata with gthumb" | Write-Error
@@ -204,7 +204,7 @@ function Write-ThePhotos {
 		$jheadInput = (Join-Path $Path "*")
 	}
 
-	$jheadCmd = "jhead -autorot '$jheadInput' *>&1"
+	$jheadCmd = "jhead -autorot $jheadInput *>&1"
 	$jheadCmd | Write-Verbose
 	Invoke-Expression $jheadCmd | Write-Verbose
 	$photos = @(Read-ThePhotos -Path $Path -SortProperty $SortProperty)
