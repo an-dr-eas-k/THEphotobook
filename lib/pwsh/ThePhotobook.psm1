@@ -41,28 +41,44 @@ class ThePhoto {
 
 	[datetime] readPhotoDate($dateString) {
 		$errors = @()
-		foreach ($f in @( { [datetime]$args[0] }, { [System.DateTime]::ParseExact($args[0], 'yyyy:MM:dd HH:mm:ss', $null) })) {
+		foreach ($f in @( 
+				{ param($ds) [datetime]$ds }, 
+				{ param($ds) [System.DateTime]::ParseExact($ds, 'yyyy:MM:dd HH:mm:ss', $null) },
+				{ param($ds) [System.DateTime]::ParseExact($ds, 'dd/MM/yyyy HH:mm:ss', $null) })) {
 			try {
-				return $f.Invoke($dateString)[0]
+				return $f.Invoke($dateString[0])[0]
 			}
-			catch [System.Exception] { $errors += $_ }
+			catch [System.Exception] { 
+				$errors += $_ 
+			}
 		}
 		throw ("errors: ", $errors) 
 	}
 
 	[void] readDateWithTagLib($metadata, [System.IO.FileInfo]$path) {
 		# [TagLib.IFD.Tags.IFDEntryTag]::DateTime = 306, see below
-		$dateString = $null `
-			?? $metadata.Tag.Exif.DateTimeOriginal `
-			?? $metadata.ImageTag.Xmp.DateTime `
-			?? $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, 306) `
-			?? $( `
-				$this.Messages.Add( "using imagemagick") | Out-Null; 
-				(& magick $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } ) `
-			?? $( `
-				$this.Messages.Add( "using LastWriteTime") | Out-Null; 
-				($path.LastWriteTime ) ) `
-			?? ""
+		$dateString = $null 
+		foreach ($try in @( 
+				{ param($metadata) $metadata.Tag.Exif.DateTimeOriginal },
+				{ param($metadata) $metadata.ImageTag.Xmp.DateTime },
+				{ param($metadata) $metadata.ImageTag.Exif.Structure.GetDateTimeValue(0, 306) }
+			)) {
+			try {
+				$dateString = $try.Invoke($metadata)
+				break
+			}
+			catch {
+				# $this.Messages.Add( "error: $_") | Out-Null
+			}
+		}
+		if (-not $dateString) {
+			$this.Messages.Add( "using imagemagick") | Out-Null 
+			$dateString = (& magick $path.FullName json: ) | ConvertFrom-Json | % { $_.Image.properties."exif:DateTime" } 
+		}
+		if (-not $dateString) {
+			$this.Messages.Add( "using LastWriteTime") | Out-Null
+			$dateString = $path.LastWriteTime 
+		}
 		if ($dateString -is [datetime]) {
 			$this.Date = $dateString
 		}
@@ -72,7 +88,14 @@ class ThePhoto {
 	}
 
 	[void] readTagsWithTagLib([System.IO.FileInfo]$path) {
+		$metadata = $null
+		try {
 		$metadata = $script:assembly.GetType("TagLib.File").GetMethod("Create", "String").Invoke($null, @($path.FullName))
+		}
+		catch {
+			"problem with image $path. You should delete all metadata with gthumb" | Write-Error
+			$_.InnerException | ConvertTo-Json | Write-Debug
+		}
 		$this.Height = $metadata.Properties.PhotoHeight
 		$this.Width = $metadata.Properties.PhotoWidth
 		$this.Upright = $this.Height -gt $this.Width
