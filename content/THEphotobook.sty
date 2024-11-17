@@ -210,9 +210,9 @@
 % #7: <foto caption>;<foto caption sub> (optional)
 \newlength{\pgap}
 \newcommand{\photoNouveauM}[7]{% {{{1
-	\ifthenelse{\equal{#1}{}}{\setlength{\fullwidth}{0.97\textwidth}}{\setlength{\fullwidth}{#1}}%
+	\ifthenelse{\equal{#1}{}}{\setlength{\fullwidth}{0.96\textwidth}}{\setlength{\fullwidth}{#1}}%
 
-	\setlength{\pgap}{0.5em}
+	\setlength{\pgap}{0.3em}
 	\setlength{\picwidth}{\fullwidth}%
 	\ifthenelse{\equal{#4}{}}{}{%
 		\setlength{\picwidth}{0.5\fullwidth}}%
@@ -293,7 +293,7 @@
 % #6: <foto caption>;<foto caption sub>
 \newcommand{\photoNouveauN}[6]{% {{{1
 
-	\setlength{\pgap}{0.5em}
+	\setlength{\pgap}{0.3em}
 
 	\setlength{\picwidthA}{#2}%	
 	\def\capt@a{\StrBefore{#3}{;}}
