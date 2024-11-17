@@ -117,6 +117,10 @@ class ThePhoto {
 
 		return $this.Upright
 	}
+
+	[bool] HasCaption() {
+		return ($this.Comment + $this.GetHumanDate()).Length -gt 0
+	}
 	
 	[string] GetHumanDate() {
 		if ($this.Date.ToLongTimeString() -eq "00:00:00") {
@@ -272,14 +276,13 @@ function Write-PhotoSegment {
 
 		$segment = ($prefix, $firstSegment, $secondSegment, $thirdSegment -join "`n  " )
 	}
-	elseif ((!!($Photo.GetHumanDate())) || (!!$Other)) {
+	elseif ($Other) {
 		$prefix = "\photoNouveauN"
 
 		$first = ( "" `
 				+ "{$($Photo.Path | Resolve-RelativePath)}" `
 				+ "{$($Photo.GetOptimalWidth())mm}" `
-				+ "{$($Photo.GetHumanDate()); " `
-				+ "$($Photo.Comment)}" `
+				+ "{$(if ($Photo.HasCaption()) { (@($Photo.GetHumanDate(), $Photo.Comment) -join "; ") } )}" `
 				+ "`n% ThePhoto: " + ($Photo.ToString())
 		)
 
@@ -288,8 +291,7 @@ function Write-PhotoSegment {
 			$second = ( "" `
 					+ "{$($Other.Path | Resolve-RelativePath)}" `
 					+ "{$($Other.GetOptimalWidth())mm}" `
-					+ "{$($Other.GetHumanDate()); " `
-					+ "$($Other.Comment)}" `
+					+ "{$(if ($Other.HasCaption()) {(@($Other.GetHumanDate(), $Other.Comment) -join "; ") } )}" `
 					+ "`n% ThePhoto: " + ($Other.ToString())
 			)
 		}

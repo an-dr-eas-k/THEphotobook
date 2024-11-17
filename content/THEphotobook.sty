@@ -240,8 +240,10 @@
 						\mbox{\textbf{\StrSubstitute{#2}{_}{\_}}}%
 					} \\[1ex]%
 				\fi%
+				\ifthenelse{\equal{#3}{}}{}{%
 				\vskip0.1em
 				\caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
+				}
 			\end{mdframed}%
 		\end{subfigure}%
 		\ifthenelse{\equal{#4}{}}{}{%
@@ -256,8 +258,10 @@
 							\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
 						} \\[1ex]%
 					\fi%
+					\ifthenelse{\equal{#5}{}}{}{%
 					\vskip0.1em
 					\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
+					}
 				\end{mdframed}%
 			\end{subfigure}%
 		}%
@@ -273,8 +277,10 @@
 							\mbox{\textbf{\StrSubstitute{#6}{_}{\_}}}%
 						} \\[1ex]%
 					\fi%
+					\ifthenelse{\equal{#7}{}}{}{%
 					\vskip0.1em
 					\caption{{\color{\captioncolor}\textbf{\protect\capt@c}~~\protect\subcapt@c}}%
+					}
 				\end{mdframed}%
 			\end{subfigure}%
 		}%
@@ -307,8 +313,10 @@
 						\mbox{\textbf{\StrSubstitute{#1}{_}{\_}}}%
 					} \\[1ex]%
 				\fi%
+			\ifthenelse{\equal{#3}{}}{}{%
 				\vskip0.1em
 				\caption{{\color{\captioncolor}\textbf{\protect\capt@a}~~\protect\subcapt@a}}%
+			}
 			\end{mdframed}%
 		\end{subfigure}%
 		\ifthenelse{\equal{#4}{}}{}{%
@@ -326,8 +334,10 @@
 							\mbox{\textbf{\StrSubstitute{#4}{_}{\_}}}%
 						} \\[1ex]%
 					\fi%
+					\ifthenelse{\equal{#6}{}}{}{%
 					\vskip0.1em
 					\caption{{\color{\captioncolor}\textbf{\protect\capt@b}~~\protect\subcapt@b}}%
+					}
 				\end{mdframed}%
 			\end{subfigure}%
 		}%
