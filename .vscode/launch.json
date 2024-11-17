@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Create PhotoBook",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "import-module ${workspaceFolder}/lib/pwsh/ThePhotobook.psd1 -force; write-thePhotos -Path ./media/*  -SortProperty Path -Verbose > content.tex; make",
+            "cwd": "${workspaceFolder}/content"
+        },
+        {
+            "name": "Debug Write-ThePhotos",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "import-module ${workspaceFolder}/lib/pwsh/ThePhotobook.psd1 -force; write-thePhotos -Path ./media/*  -SortProperty Path -Verbose",
+            "cwd": "/home/andreask/own/media/album/2024-12.monika/content"
+        }
+    ]
+}
